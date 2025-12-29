@@ -1,112 +1,61 @@
 // ======================
-// 1. تهيئة Supabase
+// 1. تعريف المتغيرات مرة واحدة فقط
 // ======================
+console.log("🎯 بدأ app.js");
+
 const supabaseUrl = 'https://pbddasxuabdcbdwbymih.supabase.co';
 const supabaseKey = 'sb_publishable_77vLiH4WXqwUxf_nMI4syA_dF8CabA1';
+
+// ⚠️ هذي السطر الوحيد لإنشاء supabase
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-console.log('✅ تم الاتصال بـ Supabase');
+console.log("✅ تم إنشاء اتصال Supabase");
 
 // ======================
-// 2. دوال للعمل مع العملاء (Customers)
+// 2. دوال جلب وعرض العملاء
 // ======================
-
-// دالة لجلب جميع العملاء من Supabase
 async function loadCustomers() {
-    console.log('🔄 جاري جلب العملاء من قاعدة البيانات...');
+    console.log("🔄 جاري جلب العملاء...");
     
-    try {
-        const { data, error } = await supabase
-            .from('customers')           // اسم الجدول عندك
-            .select('id, hospital, customer_type')
-            .order('hospital');          // ترتيب حسب الاسم
-        
-        if (error) {
-            console.error('❌ خطأ في جلب العملاء:', error);
-            alert('حدث خطأ في جلب البيانات: ' + error.message);
-            return [];
-        }
-        
-        console.log(`✅ تم جلب ${data.length} عميل`);
-        return data;
-        
-    } catch (err) {
-        console.error('❌ خطأ غير متوقع:', err);
-        return [];
-    }
-}
-
-// دالة لعرض العملاء في القائمة المنسدلة
-async function displayCustomersInSelect() {
     const selectElement = document.getElementById('customerSelect');
-    
-    // مسح الخيارات القديمة
-    selectElement.innerHTML = '<option value="">-- اختر عميل --</option>';
-    
-    // جلب العملاء من Supabase
-    const customers = await loadCustomers();
-    
-    // إضافة كل عميل للقائمة
-    customers.forEach(customer => {
-        const option = document.createElement('option');
-        option.value = customer.id;  // استخدم ID، مش الاسم
-        option.textContent = customer.hospital + (customer.customer_type ? ` (${customer.customer_type})` : '');
-        selectElement.appendChild(option);
-    });
-}
-
-// دالة لإضافة عميل جديد إلى Supabase
-async function addCustomer() {
-    const hospitalName = document.getElementById('hospitalName').value;
-    const customerType = document.getElementById('customerType').value;
-    
-    if (!hospitalName) {
-        alert('⚠️ الرجاء إدخال اسم المستشفى/العميل');
-        return;
-    }
+    selectElement.innerHTML = '<option value="">⏳ جاري التحميل...</option>';
     
     try {
         const { data, error } = await supabase
             .from('customers')
-            .insert([
-                {
-                    hospital: hospitalName,
-                    customer_type: customerType
-                }
-            ])
-            .select();  // يرجع البيانات المدخلة
+            .select('id, hospital, customer_type')
+            .order('hospital');
         
-        if (error) {
-            console.error('❌ خطأ في إضافة العميل:', error);
-            alert('فشلت الإضافة: ' + error.message);
-            return;
-        }
+        if (error) throw error;
         
-        console.log('✅ تم إضافة العميل:', data);
-        alert(`✅ تم إضافة العميل: ${hospitalName}`);
+        console.log(`📊 عدد العملاء: ${data.length}`);
         
-        // تفريغ الحقل
-        document.getElementById('hospitalName').value = '';
+        selectElement.innerHTML = '<option value="">-- اختر عميل --</option>';
         
-        // تحديث قائمة العملاء
-        await displayCustomersInSelect();
+        data.forEach(customer => {
+            const option = document.createElement('option');
+            option.value = customer.id;
+            option.textContent = customer.hospital + 
+                (customer.customer_type ? ` (${customer.customer_type})` : '');
+            selectElement.appendChild(option);
+        });
         
-    } catch (err) {
-        console.error('❌ خطأ غير متوقع:', err);
-        alert('حدث خطأ غير متوقع');
+        console.log("✅ تم تحميل العملاء بنجاح");
+        
+    } catch (error) {
+        console.error("❌ خطأ في جلب العملاء:", error);
+        selectElement.innerHTML = '<option value="">❌ خطأ في التحميل</option>';
     }
 }
 
 // ======================
-// 3. دوال للعمل مع جهات الاتصال (Customer Contacts)
+// 3. دوال جهات الاتصال
 // ======================
-
-// دالة لجلب جهات اتصال عميل معين
 async function loadContacts() {
     const customerId = document.getElementById('customerSelect').value;
     
     if (!customerId) {
-        alert('⚠️ الرجاء اختيار عميل أولاً');
+        alert("⚠️ اختر عميل أولاً");
         return;
     }
     
@@ -114,77 +63,93 @@ async function loadContacts() {
     
     try {
         const { data, error } = await supabase
-            .from('customer_contacts')    // اسم الجدول عندك
+            .from('customer_contacts')
             .select('*')
-            .eq('customer_id', customerId)  // البحث بـ customer_id
+            .eq('customer_id', customerId)
             .order('name');
         
-        if (error) {
-            console.error('❌ خطأ في جلب جهات الاتصال:', error);
-            alert('حدث خطأ في جلب الجهات: ' + error.message);
-            return;
-        }
+        if (error) throw error;
         
-        console.log(`✅ تم جلب ${data.length} جهة اتصال`);
+        console.log(`📞 عدد جهات الاتصال: ${data.length}`);
         displayContacts(data);
         
-    } catch (err) {
-        console.error('❌ خطأ غير متوقع:', err);
+    } catch (error) {
+        console.error("❌ خطأ في جلب جهات الاتصال:", error);
+        alert("خطأ: " + error.message);
     }
 }
 
-// دالة لعرض جهات الاتصال في الجدول
 function displayContacts(contacts) {
     const tableBody = document.getElementById('contactsBody');
     const contactsTable = document.getElementById('contactsTable');
     
-    // مسح الجدول القديم
     tableBody.innerHTML = '';
     
     if (!contacts || contacts.length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="4" style="text-align: center; padding: 20px;">
-                    📭 لا توجد جهات اتصال لهذا العميل
+                <td colspan="4" style="text-align:center; padding:20px;">
+                    📭 لا توجد جهات اتصال
                 </td>
             </tr>
         `;
-        contactsTable.style.display = 'block';
-        return;
+    } else {
+        contacts.forEach(contact => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${contact.name || 'بدون اسم'}</td>
+                <td>${contact.job_description || '-'}</td>
+                <td>${contact.mobile_1 || '-'}</td>
+                <td>${contact.is_active ? '✅ نشط' : '❌ غير نشط'}</td>
+            `;
+            tableBody.appendChild(row);
+        });
     }
     
-    // إضافة كل جهة اتصال للجدول
-    contacts.forEach(contact => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${contact.name || 'بدون اسم'}</td>
-            <td>${contact.job_description || '-'}</td>
-            <td>${contact.mobile_1 || '-'}</td>
-            <td>${contact.is_active ? '✅ نشط' : '❌ غير نشط'}</td>
-        `;
-        tableBody.appendChild(row);
-    });
-    
-    // إظهار الجدول
     contactsTable.style.display = 'block';
 }
 
-// دالة لإضافة جهة اتصال جديدة
-async function addContact() {
-    // سنضيفها لاحقاً - الآن ركز على العرض
-    alert('👷 سنضيف هذه الخاصية في الخطوة القادمة');
+async function addCustomer() {
+    const name = document.getElementById('hospitalName').value;
+    const type = document.getElementById('customerType').value;
+    
+    if (!name) {
+        alert("⚠️ أدخل اسم المستشفى");
+        return;
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('customers')
+            .insert([{ hospital: name, customer_type: type }])
+            .select();
+        
+        if (error) throw error;
+        
+        alert(`✅ تم إضافة: ${name}`);
+        document.getElementById('hospitalName').value = '';
+        
+        // تحديث القائمة
+        await loadCustomers();
+        
+    } catch (error) {
+        console.error("❌ خطأ في إضافة العميل:", error);
+        alert("فشل الإضافة: " + error.message);
+    }
 }
 
 // ======================
 // 4. عند تحميل الصفحة
 // ======================
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 الصفحة جاهزة، جاري تحميل العملاء...');
+    console.log("🚀 الصفحة جاهزة");
     
-    // عرض العملاء عند فتح الصفحة
-    await displayCustomersInSelect();
+    // تحميل العملاء مباشرة
+    await loadCustomers();
     
-    // جعل الأزرار تعمل
+    // ربط الأزرار
     document.getElementById('loadContactsBtn').onclick = loadContacts;
     document.getElementById('addCustomerBtn').onclick = addCustomer;
+    
+    console.log("🎛️ الأزرار جاهزة");
 });
