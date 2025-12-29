@@ -1,24 +1,27 @@
-// ======================
-// 1. تعريف المتغيرات مرة واحدة فقط
-// ======================
-console.log("🎯 بدأ app.js");
+// ============================================
+// نظام إدارة العملاء - إصدار 1.0
+// ============================================
 
+console.log("🎯 بدأ تشغيل النظام");
+
+// 1. تهيئة Supabase - مرة واحدة فقط في الملف
 const supabaseUrl = 'https://pbddasxuabdcbdwbymih.supabase.co';
 const supabaseKey = 'sb_publishable_77vLiH4WXqwUxf_nMI4syA_dF8CabA1';
 
-// ⚠️ هذي السطر الوحيد لإنشاء supabase
+// ⚠️ هذا هو السطر الوحيد الذي يعرف supabase
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+console.log("✅ تم الاتصال بـ Supabase");
 
-console.log("✅ تم إنشاء اتصال Supabase");
+// ============================================
+// 2. دوال النظام
+// ============================================
 
-// ======================
-// 2. دوال جلب وعرض العملاء
-// ======================
+// دالة لجلب العملاء من قاعدة البيانات
 async function loadCustomers() {
-    console.log("🔄 جاري جلب العملاء...");
+    console.log("🔍 جاري جلب العملاء...");
     
-    const selectElement = document.getElementById('customerSelect');
-    selectElement.innerHTML = '<option value="">⏳ جاري التحميل...</option>';
+    const select = document.getElementById('customerSelect');
+    select.innerHTML = '<option value="">⏳ جاري التحميل...</option>';
     
     try {
         const { data, error } = await supabase
@@ -28,60 +31,57 @@ async function loadCustomers() {
         
         if (error) throw error;
         
-        console.log(`📊 عدد العملاء: ${data.length}`);
-        
-        selectElement.innerHTML = '<option value="">-- اختر عميل --</option>';
+        select.innerHTML = '<option value="">-- اختر عميل --</option>';
         
         data.forEach(customer => {
             const option = document.createElement('option');
             option.value = customer.id;
             option.textContent = customer.hospital + 
                 (customer.customer_type ? ` (${customer.customer_type})` : '');
-            selectElement.appendChild(option);
+            select.appendChild(option);
         });
         
-        console.log("✅ تم تحميل العملاء بنجاح");
+        console.log(`✅ تم تحميل ${data.length} عميل`);
+        return true;
         
     } catch (error) {
-        console.error("❌ خطأ في جلب العملاء:", error);
-        selectElement.innerHTML = '<option value="">❌ خطأ في التحميل</option>';
+        console.error("❌ فشل جلب العملاء:", error);
+        select.innerHTML = '<option value="">❌ خطأ في التحميل</option>';
+        return false;
     }
 }
 
-// ======================
-// 3. دوال جهات الاتصال
-// ======================
+// دالة لجلب جهات الاتصال
 async function loadContacts() {
     const customerId = document.getElementById('customerSelect').value;
     
     if (!customerId) {
-        alert("⚠️ اختر عميل أولاً");
+        alert("⚠️ الرجاء اختيار عميل أولاً");
         return;
     }
     
-    console.log(`🔄 جاري جلب جهات اتصال العميل: ${customerId}`);
+    console.log(`🔍 جاري جلب جهات اتصال العميل: ${customerId}`);
     
     try {
         const { data, error } = await supabase
             .from('customer_contacts')
             .select('*')
-            .eq('customer_id', customerId)
-            .order('name');
+            .eq('customer_id', customerId);
         
         if (error) throw error;
         
-        console.log(`📞 عدد جهات الاتصال: ${data.length}`);
         displayContacts(data);
         
     } catch (error) {
-        console.error("❌ خطأ في جلب جهات الاتصال:", error);
+        console.error("❌ فشل جلب جهات الاتصال:", error);
         alert("خطأ: " + error.message);
     }
 }
 
+// دالة لعرض جهات الاتصال
 function displayContacts(contacts) {
     const tableBody = document.getElementById('contactsBody');
-    const contactsTable = document.getElementById('contactsTable');
+    const tableDiv = document.getElementById('contactsTable');
     
     tableBody.innerHTML = '';
     
@@ -97,59 +97,66 @@ function displayContacts(contacts) {
         contacts.forEach(contact => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${contact.name || 'بدون اسم'}</td>
+                <td>${contact.name || 'غير معروف'}</td>
                 <td>${contact.job_description || '-'}</td>
                 <td>${contact.mobile_1 || '-'}</td>
-                <td>${contact.is_active ? '✅ نشط' : '❌ غير نشط'}</td>
+                <td>${contact.is_active ? '✅' : '❌'}</td>
             `;
             tableBody.appendChild(row);
         });
     }
     
-    contactsTable.style.display = 'block';
+    tableDiv.style.display = 'block';
 }
 
+// دالة لإضافة عميل جديد
 async function addCustomer() {
-    const name = document.getElementById('hospitalName').value;
+    const name = document.getElementById('hospitalName').value.trim();
     const type = document.getElementById('customerType').value;
     
     if (!name) {
-        alert("⚠️ أدخل اسم المستشفى");
+        alert("⚠️ الرجاء إدخال اسم المستشفى");
         return;
     }
     
     try {
         const { data, error } = await supabase
             .from('customers')
-            .insert([{ hospital: name, customer_type: type }])
-            .select();
+            .insert([{ 
+                hospital: name, 
+                customer_type: type 
+            }]);
         
         if (error) throw error;
         
         alert(`✅ تم إضافة: ${name}`);
         document.getElementById('hospitalName').value = '';
         
-        // تحديث القائمة
+        // إعادة تحميل القائمة
         await loadCustomers();
         
     } catch (error) {
-        console.error("❌ خطأ في إضافة العميل:", error);
+        console.error("❌ فشل إضافة العميل:", error);
         alert("فشل الإضافة: " + error.message);
     }
 }
 
-// ======================
-// 4. عند تحميل الصفحة
-// ======================
+// ============================================
+// 3. تهيئة النظام عند تحميل الصفحة
+// ============================================
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log("🚀 الصفحة جاهزة");
+    console.log("🚀 الصفحة جاهزة للعمل");
     
     // تحميل العملاء مباشرة
     await loadCustomers();
     
-    // ربط الأزرار
+    // ربط الأزرار بالدوال
     document.getElementById('loadContactsBtn').onclick = loadContacts;
     document.getElementById('addCustomerBtn').onclick = addCustomer;
     
-    console.log("🎛️ الأزرار جاهزة");
+    console.log("🎛️ النظام جاهز للاستخدام");
 });
+
+// ============================================
+// 4. لا شيء بعد هذا السطر
+// ============================================
