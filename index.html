@@ -1,1 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة جهات اتصال العملاء</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        /* تصميم بسيط - سأعطيك ملف CSS منفصل بعدين */
+        * { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn.primary { background: #2196F3; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: right; }
+        th { background: #4CAF50; color: white; }
+        .form-group { margin-bottom: 15px; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 نظام إدارة جهات اتصال العملاء</h1>
+        
+        <div class="card">
+            <h2>👥 العملاء</h2>
+            <select id="customerSelect">
+                <option value="">جاري تحميل العملاء...</option>
+            </select>
+            <button onclick="loadContacts()" class="btn primary">عرض جهات الاتصال</button>
+            
+            <div id="contactsTable" style="display:none; margin-top:20px;">
+                <h3>📞 جهات الاتصال</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الوظيفة</th>
+                            <th>الهاتف</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contactsBody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>➕ إضافة عميل جديد</h2>
+            <div class="form-group">
+                <label>اسم المستشفى/العميل:</label>
+                <input type="text" id="hospitalName" placeholder="مثال: مستشفى القاهرة الجامعي">
+            </div>
+            <div class="form-group">
+                <label>نوع العميل:</label>
+                <select id="customerType">
+                    <option value="مستشفى">مستشفى</option>
+                    <option value="مركز طبي">مركز طبي</option>
+                    <option value="عيادة">عيادة</option>
+                </select>
+            </div>
+            <button onclick="addCustomer()" class="btn primary">إضافة العميل</button>
+        </div>
+    </div>
 
+    <script src="app.js"></script>
+</body>
+</html>
